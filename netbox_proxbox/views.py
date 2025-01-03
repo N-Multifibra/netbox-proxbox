@@ -11,6 +11,7 @@ from django.views import View
 #from django.contrib.auth.mixins import PermissionRequiredMixin
 
 import json
+import requests
 
 from netbox import configuration
 from . import ProxboxConfig
@@ -45,8 +46,9 @@ class HomeView(View):
     def get(self, request):
         """Get request."""
         
-        plugin_configuration = configuration.PLUGINS_CONFIG
-        default_config = ProxboxConfig.default_settings
+        # Get Plugin Netbox-Proxbox configuration from Netbox 'configuration.py'. If not found, use default settings.
+        plugin_configuration: dict = configuration.PLUGINS_CONFIG.get("netbox_proxbox", ProxboxConfig.default_settings)
+        default_config: dict = ProxboxConfig.default_settings
         
         return render(
             request,
@@ -146,6 +148,71 @@ class CommunityView(View):
                 "title": title,
             }
         )
+
+
+def get_proxmox_version(request):
+    # Make a request to the FastAPI endpoint to get the Proxmox version
+    # The endpoint URL is constructed using the plugin configuration
+    # The response is parsed and returned as a dictionary
+    template_name: str = 'netbox_proxbox/proxmox/version.html'
+    
+    uvicorn_host: str = configuration.PLUGINS_CONFIG["netbox_proxbox"]["fastapi"]["uvicorn_host"]
+    uvicorn_port: str = configuration.PLUGINS_CONFIG["netbox_proxbox"]["fastapi"]["uvicorn_port"]
+    fastapi_url: str = f"https://{uvicorn_host}:{uvicorn_port}/proxmox/version"
+    
+    cert_keyfile: str = '/etc/ssl/private/netbox.key'
+    cert_certfile: str = '/etc/ssl/certs/netbox.crt'
+    cert_pemfile: str = '/etc/ssl/certs/netbox.pem'
+    
+    verify_ssl: bool = True
+    pem: str = ""
+    try:
+        import os
+
+        if os.path.exists(cert_pemfile):
+            with open(cert_pemfile, 'r') as pemfile:
+                pem = pemfile.read()
+        else:
+            
+            if os.path.exists(cert_keyfile) and os.path.exists(cert_certfile):
+                
+                with open(cert_keyfile, 'r') as keyfile:
+                    key = keyfile.read()
+                
+                with open(cert_certfile, 'r') as certfile:
+                    cert = certfile.read()
+                
+                with open(cert_pemfile, 'w') as pemfile:
+                    pem = key + cert
+                    pemfile.write(pem)
+                    
+    except Exception as error:
+        print(f"Error obtaining or creating pem file: {error}")
+        verify_ssl = False
+                
+    version: list = []
+    try:
+        if verify_ssl:
+            print("Using SSL verification")
+            #response = requests.get(fastapi_url, verify=cert_pemfile)
+            response = requests.get(fastapi_url, cert=(cert_certfile, cert_keyfile))
+        else:
+            response = requests.get(fastapi_url)
+        
+        response.raise_for_status()
+        version = response.json()
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        
+    return render(
+        request,
+        template_name,
+        {
+            "version": version
+        }
+    )
+    
 
 def returnSudoUser():
     """

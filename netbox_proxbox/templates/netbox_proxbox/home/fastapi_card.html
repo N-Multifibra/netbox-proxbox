@@ -71,16 +71,16 @@
                 <!-- The fields are based on Netbox 'configuration.py' file and Plugins Configuration -->
                 <tr>
                     <th scope="row"><strong>Uvicorn Host</strong></th>
-                    {% if configuration.netbox_proxbox.fastapi.uvicorn_host %}
-                        <td id="uvicorn-host">{{ configuration.netbox_proxbox.fastapi.uvicorn_host }}</td>
+                    {% if configuration.fastapi.uvicorn_host %}
+                        <td id="uvicorn-host">{{ configuration.fastapi.uvicorn_host }}</td>
                     {% else %}
                         <td id="uvicorn-host">{{ default_config.fastapi.uvicorn_host }} (default)</td>
                     {% endif %}
                 </tr>
                 <tr>
                     <th scope="row"><strong>Uvicorn Port</strong></th>
-                    {% if configuration.netbox_proxbox.fastapi.uvicorn_port %}
-                        <td id="uvicorn-port">{{ configuration.netbox_proxbox.fastapi.uvicorn_port }}</td>
+                    {% if configuration.fastapi.uvicorn_port %}
+                        <td id="uvicorn-port">{{ configuration.fastapi.uvicorn_port }}</td>
                     {% else %}
                         <td id="uvicorn-port">{{ default_config.fastapi.uvicorn_port }} (default)</td>
                     {% endif %}

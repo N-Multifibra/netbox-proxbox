@@ -20,4 +20,6 @@ urlpatterns = [
     path('discussions/', views.DiscussionsView, name='discussions'),
     path('discord/', views.DiscordView, name='discord'),
     path('telegram/', views.TelegramView, name='telegram'),
+    
+    path('proxmox/version/', views.get_proxmox_version, name='get_proxmox_version'),  
 ]

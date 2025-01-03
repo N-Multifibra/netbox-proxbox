@@ -39,7 +39,7 @@
             </div>
 
             
-            {% for px in configuration.netbox_proxbox.proxmox %}
+            {% for px in configuration.proxmox %}
                 {% include "netbox_proxbox/home/proxmox_card.html" %}
             {% endfor %}
 
