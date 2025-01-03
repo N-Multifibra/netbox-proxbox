@@ -4,6 +4,17 @@
 {% block content %}
     {% include "netbox_proxbox/home/script.html" %}
 
+        
+    <div id="proxmox-versions"></div>
+    <button
+        hx-get="{% url 'plugins:netbox_proxbox:get_proxmox_version' %}"
+        hx-target="#proxmox-versions"
+        hx-swap="innerHTML"
+        class="btn btn-primary"
+        >
+        Get Proxmox Version
+    </button>
+    
     <div>
         <div class="row mb-3">
 

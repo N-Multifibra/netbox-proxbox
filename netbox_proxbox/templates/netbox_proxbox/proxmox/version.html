@@ -1,3 +1,21 @@
-{% for version in versions %}
-    {{ version }}
-{% endfor %}
+{% extends 'base/layout.html' %}
+
+{% block content %}
+    <h2>
+        Proxmox Versions
+    </h2>
+    {% for proxmox in versions %}
+        <div class="card p-3">
+            {% for name, values in proxmox.items %}
+                <div>
+                    <h3>{{ name }}</h3>
+                    {% for key, value in values.items %}
+                        <ul>
+                            <li><strong>{{ key }}: </strong>{{ value }}</li>
+                        </ul>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+{% endblock %}
