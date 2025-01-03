@@ -10,8 +10,10 @@ from django.views import View
 # Netbox's existing authorization system.
 #from django.contrib.auth.mixins import PermissionRequiredMixin
 
+import os
 import json
 import requests
+import urllib3
 
 from netbox import configuration
 from . import ProxboxConfig
@@ -150,66 +152,89 @@ class CommunityView(View):
         )
 
 
+def px_request(
+    fastapi_url: str,
+    verify_ssl: bool = True,
+    cert_certfile: str = "",
+    cert_keyfile: str = ""
+) -> dict:
+    try:
+        if verify_ssl:
+            print("Using SSL verification")
+            response = requests.get(fastapi_url, cert=(cert_certfile, cert_keyfile))
+            response.raise_for_status()
+            version = response.json()
+            
+            return version
+        else:
+            print("Not using SSL verification")
+            urllib3.disable_warnings()
+            response = requests.get(fastapi_url, verify=False)
+            response.raise_for_status()
+            version = response.json()
+            
+            return version
+    
+    except requests.exceptions.SSLError as ssl_error:
+        print("SSL Error:", ssl_error)
+        # TODO: Handle SSL error and/or load self-signed certificate with local CA Authority.
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    return {}
+
+
+def proxmox_connection(uri: str):
+    uvicorn_host: str = configuration.PLUGINS_CONFIG["netbox_proxbox"]["fastapi"]["uvicorn_host"]
+    uvicorn_port: str = configuration.PLUGINS_CONFIG["netbox_proxbox"]["fastapi"]["uvicorn_port"]
+    fastapi_url: str = f"https://{uvicorn_host}:{uvicorn_port}/{uri}"
+    
+    cert_keyfile: str = '/etc/ssl/private/netbox.key'
+    cert_certfile: str = '/etc/ssl/certs/netbox.crt'
+
+    verify_ssl: bool = True
+    
+    # Try to get CERT and KEY files to use in SSL verification
+    if verify_ssl:
+        # Check if both files exist. If not, switch 'verify_ssl' to 'False'.
+        if not (os.path.exists(cert_keyfile) and os.path.exists(cert_certfile)):
+            print("Cert and Key files not found.")
+            # Continue to try to get the Proxmox version without SSL verification.
+
+        else:
+            # Try to get the Proxmox version using SSL verification.
+            json_data: dict = px_request(fastapi_url = fastapi_url, verify_ssl=verify_ssl, cert_certfile=cert_certfile, cert_keyfile=cert_keyfile)
+            if json_data:
+                return json_data
+
+    try:
+        json_data: dict = px_request(fastapi_url = fastapi_url, verify_ssl=False)
+        if json_data:
+            return json_data
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    return {}
+        
 def get_proxmox_version(request):
     # Make a request to the FastAPI endpoint to get the Proxmox version
     # The endpoint URL is constructed using the plugin configuration
     # The response is parsed and returned as a dictionary
     template_name: str = 'netbox_proxbox/proxmox/version.html'
     
-    uvicorn_host: str = configuration.PLUGINS_CONFIG["netbox_proxbox"]["fastapi"]["uvicorn_host"]
-    uvicorn_port: str = configuration.PLUGINS_CONFIG["netbox_proxbox"]["fastapi"]["uvicorn_port"]
-    fastapi_url: str = f"https://{uvicorn_host}:{uvicorn_port}/proxmox/version"
+    version = proxmox_connection(uri = "proxmox/version")
+    print(version)
     
-    cert_keyfile: str = '/etc/ssl/private/netbox.key'
-    cert_certfile: str = '/etc/ssl/certs/netbox.crt'
-    cert_pemfile: str = '/etc/ssl/certs/netbox.pem'
-    
-    verify_ssl: bool = True
-    pem: str = ""
-    try:
-        import os
-
-        if os.path.exists(cert_pemfile):
-            with open(cert_pemfile, 'r') as pemfile:
-                pem = pemfile.read()
-        else:
-            
-            if os.path.exists(cert_keyfile) and os.path.exists(cert_certfile):
-                
-                with open(cert_keyfile, 'r') as keyfile:
-                    key = keyfile.read()
-                
-                with open(cert_certfile, 'r') as certfile:
-                    cert = certfile.read()
-                
-                with open(cert_pemfile, 'w') as pemfile:
-                    pem = key + cert
-                    pemfile.write(pem)
-                    
-    except Exception as error:
-        print(f"Error obtaining or creating pem file: {error}")
-        verify_ssl = False
-                
-    version: list = []
-    try:
-        if verify_ssl:
-            print("Using SSL verification")
-            #response = requests.get(fastapi_url, verify=cert_pemfile)
-            response = requests.get(fastapi_url, cert=(cert_certfile, cert_keyfile))
-        else:
-            response = requests.get(fastapi_url)
-        
-        response.raise_for_status()
-        version = response.json()
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
-        
     return render(
         request,
         template_name,
         {
-            "version": version
+            "versions": version
         }
     )
     

@@ -271,4 +271,3 @@ async def standalone_info():
             "reason": "FastAPI was chosen because of performance and reliabilty."
         }
     }
-
