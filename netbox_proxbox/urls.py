@@ -21,5 +21,6 @@ urlpatterns = [
     path('discord/', views.DiscordView, name='discord'),
     path('telegram/', views.TelegramView, name='telegram'),
     
-    path('proxmox/version/', views.get_proxmox_version, name='get_proxmox_version'),  
+    path('proxmox/version/', views.get_proxmox_version, name='get_proxmox_version_list'),
+    path('proxmox/version/<str:domain>', views.get_proxmox_version, name='get_proxmox_version'), 
 ]

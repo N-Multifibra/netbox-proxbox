@@ -5,9 +5,11 @@
     {% include "netbox_proxbox/home/script.html" %}
 
         
-    <div id="proxmox-versions"></div>
+    <div 
+        id="proxmox-versions"
+    ></div>
     <button
-        hx-get="{% url 'plugins:netbox_proxbox:get_proxmox_version' %}"
+        hx-get="{% url 'plugins:netbox_proxbox:get_proxmox_version_list' %}"
         hx-target="#proxmox-versions"
         hx-swap="innerHTML"
         class="btn btn-primary"
@@ -44,7 +46,7 @@
 
 
             <div class="d-flex justify-content-center flex-nowrap" style="margin-bottom: 15px;">
-                <h2>
+                <h2 id="proxbox-configuration">
                     Proxbox Configuration
                 </h2>
             </div>

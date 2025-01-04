@@ -1,9 +1,15 @@
 import subprocess
 
 from django.shortcuts import render, redirect
+from django.http import HttpRequest, HttpResponse
 
 # 'View' is a django subclass. Basic type of class-based views
 from django.views import View
+from django.views.decorators.http import require_GET
+from django.urls import reverse
+
+from django_htmx.middleware import HtmxDetails
+from django_htmx.http import replace_url
 
 # Enables permissions for views using Django authentication system.
 # PermissionRequiredMixin = will handle permission checks logic and will plug into the
@@ -19,6 +25,9 @@ from netbox import configuration
 from . import ProxboxConfig
     
 from . import github
+
+class HtmxHttpRequest(HttpRequest):
+    htmx: HtmxDetails
 
 class HomeView(View):
     """
@@ -220,23 +229,33 @@ def proxmox_connection(uri: str):
         print(f"Error: {e}")
 
     return {}
-        
-def get_proxmox_version(request):
+
+@require_GET
+def get_proxmox_version(request: HtmxHttpRequest, domain: str = "") -> HttpResponse:
     # Make a request to the FastAPI endpoint to get the Proxmox version
     # The endpoint URL is constructed using the plugin configuration
     # The response is parsed and returned as a dictionary
     template_name: str = 'netbox_proxbox/proxmox/version.html'
     
-    version = proxmox_connection(uri = "proxmox/version")
+    if domain:
+        version = proxmox_connection(uri = f"proxmox/version?domain={domain}")
+    else:
+        version = proxmox_connection(uri = "proxmox/version")
     print(version)
     
-    return render(
+    response = render(
         request,
         template_name,
         {
             "versions": version
         }
     )
+    
+    if domain:
+
+        return replace_url(response, reverse('plugins:netbox_proxbox:get_proxmox_version', kwargs={'domain': domain}))
+    else:
+        return replace_url(response, reverse('plugins:netbox_proxbox:get_proxmox_version_list'))
     
 
 def returnSudoUser():

@@ -1,4 +1,7 @@
 {% load static %}
+<head>
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
 
 <div class="col col-md-6">
     <div class="card">
@@ -24,9 +27,9 @@
         </div>
 
         <div class="card-body">
-            <table class="table table-hover attr-table" >
+            <table id="proxmox-table" class="table table-hover attr-table" >
                 <!-- The following four (4) fields are filled by API response. If empty, means the API failed. -->
-                <tr class="proxmox_version">
+                <tr>
                     <th scope="row" ><strong>Proxmox Cluster Name</strong></th>
                     <td id="{{ px.domain }}">
                         <span class='badge text-bg-grey' title='Proxmox Cluster Name'>
@@ -34,7 +37,7 @@
                         </span>
                     </td>
                 </tr>
-                <tr class="proxmox_version">
+                <tr>
                     <th scope="row" ><strong>Proxmox Cluster Mode</strong></th>
                     <td id="{{ px.domain }}">
                         <span class='badge text-bg-grey' title='Proxmox Cluster Mode'>
@@ -42,22 +45,29 @@
                         </span>
                     </td>
                 </tr>
-                <tr class="proxmox_version">
-                    <th scope="row" ><strong>Proxmox Version</strong></th>
-                    <td id="{{ px.domain }}">
-                        <span class='badge text-bg-grey' title='Proxmox Cluster Mode'>
-                            </strong>Empty</strong>
-                        </span>
-                    </td>
-                </tr>
-                <tr class="proxmox_version">
-                    <th scope="row" ><strong>Proxmox RepoID</strong></th>
-                    <td id="{{ px.domain }}">
-                        <span class='badge text-bg-grey' title='Proxmox Cluster Mode'>
-                            </strong>Empty</strong>
-                        </span>
-                    </td>
-                </tr>
+                <span id='proxmox-version-rows'>
+                    <tr>
+                        <th scope="row" ><strong>Proxmox Version</strong></th>
+                        <td 
+                            id="proxmox-version-{{ px.domain }}"
+                            hx-get="{% url 'plugins:netbox_proxbox:get_proxmox_version' '10.0.30.9' %}"
+                            hx-trigger="load"
+                            hx-target="#proxmox-version-{{ px.domain }}"
+                        >
+                            <span class='badge text-bg-grey' title='Proxmox Endpoint Version'>
+                                <strong id="proxmox-version-value-{{ px.domain }}">Empty</strong>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" ><strong>Proxmox RepoID</strong></th>
+                        <td id="{{ px.domain }}">
+                            <span class='badge text-bg-grey' title='Proxmox Cluster Mode'>
+                                </strong>Empty</strong>
+                            </span>
+                        </td>
+                    </tr>
+                </span>
                 <!-- The rest of the fields are based on Netbox 'configuration.py' file and Plugins Configuration -->
                 <tr>
                     <th scope="row"><strong>Domain / IP</strong></th>
