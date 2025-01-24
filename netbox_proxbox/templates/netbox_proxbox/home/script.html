@@ -88,12 +88,6 @@
 
     }
 
-    function fullUpdate(event) {
-        // Send Websocket Message
-        ws.send("Start")
-        event.preventDefault()
-    }
-
     function syncNodes(event) {
         ws.send("Sync Nodes")
         event.preventDefault()

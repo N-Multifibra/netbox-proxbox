@@ -21,6 +21,28 @@ def get_service_status(
     pk: int,
 ) -> HttpResponse:
     """Get the status of a service."""
+    def get_request(url: str):
+        try:
+            response = requests.get(url, verify=False)
+            response.raise_for_status()
+            return response.json()
+
+        except requests.exceptions.SSLError as err:
+            print(f'SSL error ocurred: {err}')
+            response = get_request(url=url.replace('https://', 'http://'))
+            if response:
+                return response
+        
+        except requests.exceptions.HTTPError as err:
+            print(f'HTTP error ocrrured: {err}')
+            
+        except Exception as err:
+            print(f'Error ocurred: {err}')
+        
+        return None
+        
+    
+    
     template_name: str = 'netbox_proxbox/status_badge.html'
     
     # Accept only HTMX requests to render this view.
@@ -38,7 +60,7 @@ def get_service_status(
     
     if fastapi_service_obj:
         host = str(fastapi_service_obj.ip_address.address).split('/')[0]
-        url: str = f"http://{host}:{fastapi_service_obj.port}"
+        url: str = f"https://{host}:{fastapi_service_obj.port}"
     
     if service == 'proxmox':
         proxmox_service_obj = ProxmoxEndpoint.objects.get(pk=pk)
@@ -53,63 +75,46 @@ def get_service_status(
         
         netbox_endpoint_url = f'{url}/netbox/endpoint'
         
-        try:
-            # Check if NetBoxEndpoint exists on FastAPI database.
-            response = requests.get(netbox_endpoint_url)
-            response.raise_for_status()
-            response = list(response.json())
+        # Check if NetBoxEndpoint exists on FastAPI database
+        response = get_request(netbox_endpoint_url)
+        if response:
+            status = 'success'
             
-            netbox = None
-            
-            if len(response) > 0:
-                for nb in response:
-                    if (nb['id'] == pk) and (nb['ip_address'] == netbox_ip):
-                        netbox = nb
-                        break
-                
-                if netbox:
-                    # Delete all NetBoxEndpoints from FastAPI database, except the one that matches the current NetBoxEndpoint.
-                    for nb in response:
-                        if nb['id'] != pk:
-                            requests.delete(f'{netbox_endpoint_url}/{nb["id"]}')
-                else:
-                    # Delete all NetBoxEndpoints from FastAPI database.
-                    for nb in response:
-                        requests.delete(f'{netbox_endpoint_url}/{nb["id"]}')
+        netbox = None
+        
+        if len(response) > 0:
+            for nb in response:
+                if (nb['id'] == pk) and (nb['ip_address'] == netbox_ip):
+                    netbox = nb
+                    break
             
             if netbox:
-                # NetBoxEndpoint exists on FastAPI database. Check if it is alive.
-                url = f'{url}/netbox/status'
+                # Delete all NetBoxEndpoints from FastAPI database, except the one that matches the current NetBoxEndpoint.
+                for nb in response:
+                    if nb['id'] != pk:
+                        requests.delete(f'{netbox_endpoint_url}/{nb["id"]}')
             else:
-                # Create NetBoxEndpoint on FastAPI database.
-                requests.post(netbox_endpoint_url, json={
-                    'id': pk,
-                    'name': netbox_service_obj.name,
-                    'ip_address': netbox_ip,
-                    'port': netbox_service_obj.port,
-                    'token': netbox_service_obj.token
-                })
-            
-        except requests.exceptions.HTTPError as err:
-            print(f'HTTP error ocrrured: {err}')
-            status = 'error'
+                # Delete all NetBoxEndpoints from FastAPI database.
+                for nb in response:
+                    requests.delete(f'{netbox_endpoint_url}/{nb["id"]}')
         
-        except Exception as errr:
-            print(f'Error ocurred: {errr}')
-            status = 'error'
+        if netbox:
+            # NetBoxEndpoint exists on FastAPI database. Check if it is alive.
+            url = f'{url}/netbox/status'
+        else:
+            # Create NetBoxEndpoint on FastAPI database.
+            requests.post(netbox_endpoint_url, json={
+                'id': pk,
+                'name': netbox_service_obj.name,
+                'ip_address': netbox_ip,
+                'port': netbox_service_obj.port,
+                'token': netbox_service_obj.token
+            })
             
-        
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
+    response = get_request(url)
+    if response:
         status = 'success'
-        
-    except requests.exceptions.HTTPError as err:
-        print(f'HTTP error ocrrured: {err}')
-        status = 'error'
-        
-    except Exception as errr:
-        print(f'Error ocurred: {errr}')
+    else:
         status = 'error'
     
     return render(

@@ -130,6 +130,7 @@ async def websocket_endpoint(
     while True:
         try:
             data = await websocket.receive_text()
+            print(f"Received data: {data}")
         except Exception as error:
             print(f"Error while receiving data from WebSocket: {error}")
             await websocket.close()

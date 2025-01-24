@@ -53,6 +53,14 @@ class HomeView(View):
         netbox_endpoint_obj = NetBoxEndpoint.objects.all()
         fastapi_endpoint_obj = FastAPIEndpoint.objects.all()
 
+        fastapi_ws_endpoint: str = ''
+        try:
+            fastapi_obj = FastAPIEndpoint.objects.first()
+            fastapi_ws_endpoint = f'ws://{str(fastapi_obj.ip_address.address).split("/")[0]}:{fastapi_obj.port}/ws'
+            print(f'WebSocket URL: {fastapi_ws_endpoint}')
+        except Exception as error:
+            print(error)
+        
         return render(
             request,
             self.template_name,
@@ -61,6 +69,7 @@ class HomeView(View):
                 'proxmox_endpoint_list': proxmox_endpoint_obj,
                 'netbox_endpoint_list': netbox_endpoint_obj,
                 'fastapi_endpoint_list': fastapi_endpoint_obj,
+                'fastapi_ws_endpoint': fastapi_ws_endpoint,
             }
         )
 
