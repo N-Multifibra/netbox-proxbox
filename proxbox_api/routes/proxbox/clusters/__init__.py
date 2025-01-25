@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from proxbox_api.session.proxmox import ProxmoxSessionsDep
 from proxbox_api.session.netbox import NetboxSessionDep
 
-from proxbox_api.logging import log
+from proxbox_api.logger import log
 from proxbox_api.exception import ProxboxException, exception_log
 from proxbox_api.routes.netbox.generic.bootstrap import (
     create_default_custom_fields,
