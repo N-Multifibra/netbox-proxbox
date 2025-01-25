@@ -9,6 +9,7 @@ dependencies = [
     "logging>=0.4.9.6",
     "proxmoxer>=2.2.0",
     "pynetbox>=7.4.1",
+    "rich>=13.9.4",
     "sqlmodel>=0.0.22",
     "typer>=0.15.1",
     "websockets>=14.1",
