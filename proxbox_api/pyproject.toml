@@ -6,7 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.115.6",
+    "logging>=0.4.9.6",
     "proxmoxer>=2.2.0",
     "pynetbox>=7.4.1",
     "sqlmodel>=0.0.22",
+    "typer>=0.15.1",
+    "websockets>=14.1",
 ]
